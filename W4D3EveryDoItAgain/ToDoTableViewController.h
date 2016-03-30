@@ -13,4 +13,5 @@
 @interface ToDoTableViewController : UIViewController
 @property (strong, nonatomic) NSFetchedResultsController *fetchedResultsController;
 @property (strong, nonatomic) User *currentUser;
+@property (assign, nonatomic) bool isEditingAllowed;
 @end

@@ -8,9 +8,15 @@
 
 #import "ToDoDetailViewController.h"
 #import "ToDo.h"
+#import "User.h"
 
 @interface ToDoDetailViewController ()
 @property (strong, nonatomic) IBOutlet UITextField *toDoItemTextField;
+@property (strong, nonatomic) IBOutlet UITextField *toDoPriorityTextField;
+@property (strong, nonatomic) IBOutlet UITextField *toDoDescriptionTextField;
+@property (strong, nonatomic) IBOutlet UITextField *toDoUserTextField;
+@property (strong, nonatomic) IBOutlet UITextField *toDoStatusTextField;
+@property (strong, nonatomic) IBOutlet UITextField *toDoDeadlineTextField;
 
 @end
 
@@ -21,6 +27,11 @@
     // Do any additional setup after loading the view.
   
   self.toDoItemTextField.text = self.toDo.item;
+  self.toDoPriorityTextField.text = self.toDo.priority;
+  self.toDoDescriptionTextField.text = self.toDo.detailedDescription;
+  self.toDoUserTextField.text = self.toDo.user.name;
+  self.toDoStatusTextField.text = self.toDo.status;
+  //  self.toDoDeadlineTextField.text = self.toDo.deadline
 }
 
 - (void)didReceiveMemoryWarning {

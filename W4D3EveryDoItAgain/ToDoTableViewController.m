@@ -14,13 +14,21 @@
 #import "AddToDoViewController.h"
 #import "ToDoDetailViewController.h"
 
-@interface ToDoTableViewController ()<UITableViewDelegate,UITableViewDataSource>
+@interface ToDoTableViewController ()<UITableViewDelegate,UITableViewDataSource,NSFetchedResultsControllerDelegate>
 
 @property (strong, nonatomic) IBOutlet UITableView *tableView;
 
 @end
 
 @implementation ToDoTableViewController
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+  self = [super initWithCoder:coder];
+  if (self) {
+    self.isEditingAllowed = YES;
+  }
+  return self;
+}
 
 - (void)viewDidLoad {
   [super viewDidLoad];
@@ -28,40 +36,41 @@
   [self prepareView];
   [self prepareData];
 }
--(void)viewDidAppear:(BOOL)animated{
-  self.fetchedResultsController = [[CoreDataHandler sharedInstance] getAllToDoForUser:self.currentUser];
-  [self.tableView reloadData];
-}
 -(void)prepareView{
   self.tableView.delegate = self;
   self.tableView.dataSource = self;
+  UISwipeGestureRecognizer *swipToComplete = [[UISwipeGestureRecognizer alloc] initWithTarget:self
+                                                                                       action:@selector(swipeToComplete:)]
+  ;
+  swipToComplete.direction = UISwipeGestureRecognizerDirectionRight;
+  [self.tableView addGestureRecognizer:swipToComplete];
   
-  //Edit button
-  self.navigationItem.leftBarButtonItem  = self.editButtonItem;
-  self.editButtonItem.target = self;
-  self.editButtonItem.action = @selector(editTapped);
+  //Check if allow editing
+  if (self.isEditingAllowed){
+    //Edit button
+    self.navigationItem.leftBarButtonItem  = self.editButtonItem;
+    self.editButtonItem.target = self;
+    self.editButtonItem.action = @selector(editTapped);
+    //Add button
+    self.navigationItem.rightBarButtonItem  = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(addButton)];
+  }
   
+  [self.navigationController.navigationBar setBackgroundColor:[UIColor yellowColor]];
 }
 -(void)prepareData{
   //Get current user
   if (!self.currentUser){
     self.currentUser = [[CoreDataHandler sharedInstance] getUserWithUsername:@"karlop"];
   }
-  if (self.currentUser.toDo.count == 0){
-    ToDo *toDo = [NSEntityDescription insertNewObjectForEntityForName:@"ToDo" inManagedObjectContext:[CoreDataHandler sharedInstance].managedObjectContext];
-    toDo.item = @"Test task";
-    
-    [[CoreDataHandler sharedInstance] addToDo:toDo toUser:self.currentUser];
-  }
-  
+  //Set the fetchedResultsController
   self.fetchedResultsController = [[CoreDataHandler sharedInstance] getAllToDoForUser:self.currentUser];
+  self.fetchedResultsController.delegate = self;
 }
 
 //MARK: Table view data source
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
   return self.fetchedResultsController.sections[section].numberOfObjects;
 }
-
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
   UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"toDoCell" forIndexPath:indexPath];
   
@@ -69,19 +78,21 @@
   ToDo *toDo = [self.fetchedResultsController objectAtIndexPath:indexPath];
   cell.textLabel.text = toDo.item;
   cell.detailTextLabel.text = @"detail text label";
+  if ([toDo.status isEqualToString:@"Complete"]) {
+    cell.accessoryType = UITableViewCellAccessoryCheckmark;
+  }
   
   return cell;
 }
-// Override to support conditional editing of the table view.
-- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
-  // Return NO if you do not want the specified item to be editable.
+-(BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath{
   return YES;
 }
+
 // Override to support editing the table view.
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
   if (editingStyle == UITableViewCellEditingStyleDelete) {
     // Delete the row from the data source
-    [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+    [[CoreDataHandler sharedInstance] deleteToDo:[self.fetchedResultsController objectAtIndexPath:indexPath]];
   } else if (editingStyle == UITableViewCellEditingStyleInsert) {
     // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
   }
@@ -97,6 +108,38 @@
 // return YES;
 // }
 
+//MARK: NSFetchedResultsControllerDelegate
+-(void)controller:(NSFetchedResultsController *)controller
+  didChangeObject:(id)anObject
+      atIndexPath:(NSIndexPath *)indexPath
+    forChangeType:(NSFetchedResultsChangeType)type
+     newIndexPath:(NSIndexPath *)newIndexPath{
+  UITableView *tableView = self.tableView;
+  
+  switch(type) {
+    case NSFetchedResultsChangeInsert:
+      [tableView insertRowsAtIndexPaths:@[newIndexPath] withRowAnimation:UITableViewRowAnimationFade];
+      break;
+    case NSFetchedResultsChangeDelete:
+      [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+      break;
+    case NSFetchedResultsChangeUpdate:
+//      [[self.tableView cellForRowAtIndexPath:indexPath] setItem:anObject];
+      break;
+    case NSFetchedResultsChangeMove:
+      [tableView moveRowAtIndexPath:indexPath toIndexPath:newIndexPath];
+      break;
+  }
+  
+  [self.tableView reloadData];
+}
+-(void)controllerWillChangeContent:(NSFetchedResultsController *)controller{
+  [self.tableView beginUpdates];
+}
+-(void)controllerDidChangeContent:(NSFetchedResultsController *)controller{
+  [self.tableView endUpdates];
+}
+
 //MARK: Actions
 -(void)editTapped{
   [self.tableView setEditing:!self.tableView.editing animated:YES];
@@ -106,6 +149,14 @@
   } else{
     [self.navigationItem.leftBarButtonItem setTitle:@"Edit"];
   }
+}
+-(void)addButton{
+  [self performSegueWithIdentifier:@"showAddToDo" sender:self];
+}
+-(void)completeItem:(NSIndexPath *)indexpath{
+  ToDo *toDoToComplete = [self.fetchedResultsController objectAtIndexPath:indexpath];
+  toDoToComplete.status = @"Complete";
+  [[CoreDataHandler sharedInstance] updateToDo:toDoToComplete];
 }
 
 //MARK: Navigation
@@ -119,7 +170,17 @@
     ToDoDetailViewController *destinationVC = segue.destinationViewController;
     destinationVC.toDo = [self.fetchedResultsController objectAtIndexPath:self.tableView.indexPathForSelectedRow];;
   }
+}
+//MARK: Gestures
+-(void)swipeToComplete:(UISwipeGestureRecognizer *)recognizer{
+  NSLog(@"swipe registered");
   
+  CGPoint location = [recognizer locationInView:self.tableView];
+  NSIndexPath *indexSwiped = [self.tableView indexPathForRowAtPoint:location];
+  if(indexSwiped.section != 1){
+    [self completeItem:indexSwiped];
+  }
+  NSLog(@"%@",indexSwiped);
 }
 @end
 

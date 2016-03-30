@@ -27,4 +27,6 @@
 -(User *)getUserWithUsername:(NSString *)username;
 -(NSFetchedResultsController *)getAllToDoForUser:(User *)user;
 -(void)addToDo:(ToDo *)todo toUser:(User *)user;
+-(void)deleteToDo:(ToDo *)todo;
+-(void)updateToDo:(ToDo *)todo;
 @end

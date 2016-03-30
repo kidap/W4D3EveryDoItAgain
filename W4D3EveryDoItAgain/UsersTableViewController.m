@@ -24,8 +24,11 @@
   [self prepareView];
   [self prepareData];
 }
+-(void)viewDidAppear:(BOOL)animated{
+  [self.navigationController.navigationBar setBackgroundColor:[UIColor greenColor]];
+}
 -(void)prepareView{
-  
+    [self.navigationController.navigationBar setBackgroundColor:[UIColor greenColor]];
 }
 -(void)prepareData{
   self.fetchedResultsController = [[CoreDataHandler sharedInstance] getAllUsers];
@@ -57,6 +60,7 @@
   // Configure the cell...
   User *user = [self.fetchedResultsController objectAtIndexPath:indexPath];
   cell.textLabel.text = user.name;
+  cell.detailTextLabel.text = [@(user.toDo.count) stringValue];
   
   return cell;
 }
@@ -67,7 +71,8 @@
   // Pass the selected object to the new view controller.
   if ([segue.identifier isEqualToString:@"showUserToDo"]) {
     ToDoTableViewController *destinationVC = segue.destinationViewController;
-    
+    destinationVC.currentUser = [self.fetchedResultsController objectAtIndexPath:self.tableView.indexPathForSelectedRow];
+    destinationVC.isEditingAllowed = NO;
   }
 }
 

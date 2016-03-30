@@ -143,7 +143,14 @@
   todo.user = user;
   
   [self saveContext];
-  
+}
+-(void)deleteToDo:(ToDo *)todo{
+  [self.managedObjectContext deleteObject:todo];
+  [self saveContext];
+}
+
+-(void)updateToDo:(ToDo *)todo{
+  [self saveContext];
 }
 
 @end

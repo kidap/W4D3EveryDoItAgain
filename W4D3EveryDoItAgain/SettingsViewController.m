@@ -9,6 +9,8 @@
 #import "SettingsViewController.h"
 
 @interface SettingsViewController ()
+@property (strong, nonatomic) IBOutlet UITextField *toDoItemTextField;
+@property (strong, nonatomic) IBOutlet UINavigationBar *navigationBar;
 
 @end
 
@@ -17,9 +19,29 @@
 - (void)viewDidLoad {
   [super viewDidLoad];
   [self prepareView];
+  [self prepareUserDefaults];
+  
 }
 -(void)prepareView{
+  [self.navigationBar setBackgroundColor:[UIColor blueColor]];
+}
+-(void)prepareUserDefaults{
+  NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
+  NSString *defaultItem = [userDefault stringForKey:@"defaultItem"];
+  if (defaultItem != nil){
+    self.toDoItemTextField.text = defaultItem;
+  }
+}
+- (IBAction)saveButton:(id)sender {
   
+  NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
+  [userDefault setObject:self.toDoItemTextField.text forKey:@"defaultItem"];
+  
+  //Alert -successful
+  UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Saved" message:@"Settings was successfully saved." preferredStyle:UIAlertControllerStyleAlert];
+  [alert addAction:[UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleDefault handler:nil]];
+  
+  [self presentViewController:alert animated:YES completion:nil];
 }
 
 
