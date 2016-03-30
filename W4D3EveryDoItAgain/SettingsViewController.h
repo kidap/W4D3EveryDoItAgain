@@ -1,5 +1,5 @@
 //
-//  ViewController.h
+//  SettingsViewController.h
 //  W4D3EveryDoItAgain
 //
 //  Created by Karlo Pagtakhan on 03/30/2016.
@@ -8,8 +8,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface ViewController : UIViewController
-
+@interface SettingsViewController : UIViewController
 
 @end
-
